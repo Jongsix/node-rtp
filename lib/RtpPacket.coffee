@@ -1,9 +1,14 @@
 Buffer = require('buffer').Buffer
 
 Number::toUnsigned = ->
-  return ((this >>> 1) * 2 + (this & 1))
+  return ((@ >>> 1) * 2 + (@ & 1))
 
 RTP_HEADER_SIZE = 12
+MARKER_BIT = 0x80
+TYPE_MASK = 0x7F
+
+isSet = (where, mask) ->
+    return (mask is (where & mask))
 
 class RtpPacket
   constructor: (bufPayload, fullPacket) ->
@@ -32,7 +37,7 @@ class RtpPacket
     //EL = 0; // header extension length. not supported yet (16 bits)
     ###
 
-    fullPacket = false if `full === undefined || full === null`
+    fullPacket = false if `fullPacket === undefined || fullPacket === null`
 
     if fullPacket
       @_bufpkt = bufPayload
@@ -54,11 +59,18 @@ class RtpPacket
       @_bufpkt[11] = 1
       bufPayload.copy @_bufpkt, 12, 0 # append payload data
 
-RtpPacket::__defineGetter__ 'type', -> return (@_bufpkt[1] & 0x7F)
+RtpPacket::__defineGetter__ 'marker', -> isSet @_bufpkt[1], MARKER_BIT
+RtpPacket::__defineSetter__ 'marker', (set) ->
+  if set
+    @_bufpkt[1] |= MARKER_BIT
+  else
+    @_bufpkt[1] &= ~MARKER_BIT
+
+RtpPacket::__defineGetter__ 'type', -> return (@_bufpkt[1] & TYPE_MASK)
 RtpPacket::__defineSetter__ 'type', (val) ->
   val = val.toUnsigned()
   if val <= 127
-    @_bufpkt[1] -= (@_bufpkt[1] & 0x7F)
+    @_bufpkt[1] -= (@_bufpkt[1] & TYPE_MASK)
     @_bufpkt[1] |= val
 
 RtpPacket::__defineGetter__ 'seq', -> return (@_bufpkt[2] << 8 | @_bufpkt[3])
@@ -79,7 +91,7 @@ RtpPacket::__defineSetter__ 'time', (val) ->
 
 RtpPacket::__defineGetter__ 'source', -> return (@_bufpkt[8] << 24 | @_bufpkt[9] << 16 | @_bufpkt[10] << 8 | @_bufpkt[11])
 RtpPacket::__defineSetter__ 'source', (val) ->
-  val = val.toUnsigned();
+  val = val.toUnsigned()
   if val <= 4294967295
     @_bufpkt[8] = (val >>> 24)
     @_bufpkt[9] = (val >>> 16 & 0xFF)
