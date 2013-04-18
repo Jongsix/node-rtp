@@ -1,6 +1,6 @@
 {
   "name": "node-rtp",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "RTP module for node.js",
   "main": "index.js",
   "directories": {
@@ -16,6 +16,6 @@
   "author": "mainiak",
   "license": "BSD",
   "dependencies": {
-    "coffee-script": "~1.4.0"
+    "coffee-script": ">=1.6.2"
   }
 }
